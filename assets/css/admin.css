@@ -1,0 +1,241 @@
+.wrap {
+    position: relative;
+}
+
+.sync-page-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(100vh - 32px); /* Account for admin bar */
+    margin: 0; /* Remove any offset */
+}
+
+.card.manual-sync-card {
+    width: 100%;
+    max-width: 500px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    padding: 20px;
+    margin: 0 auto;
+}
+
+/* Adjust for folded menu */
+.folded .card.manual-sync-card {
+    left: calc(50% + 18px); /* Half of folded menu width (36px/2) */
+}
+
+/* Adjust for mobile */
+@media screen and (max-width: 782px) {
+    .card.manual-sync-card {
+        left: 50%; /* No offset on mobile as menu is hidden */
+        width: calc(100% - 40px);
+    }
+}
+
+.sync-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.sync-loader .spinner {
+    background: url(../../../../wp-admin/images/spinner.gif) no-repeat;
+    background-size: 20px 20px;
+    display: inline-block;
+    visibility: visible;
+    opacity: 0.7;
+    width: 20px;
+    height: 20px;
+    margin: 0 0 10px;
+}
+
+.sync-loader p {
+    color: #3c434a;
+    margin: 0;
+    font-size: 14px;
+}
+
+.manual-sync-card h2 {
+    margin: 0 0 15px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid #c3c4c7;
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+.form-table {
+    margin: 15px 0;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.form-table th {
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 10px 10px 0;
+    width: 120px;
+    line-height: 1.3;
+    vertical-align: top;
+}
+
+.form-table td {
+    padding: 10px 10px;
+    line-height: 1.3;
+    vertical-align: middle;
+}
+
+select {
+    width: 100%;
+    max-width: 25em;
+}
+
+.submit {
+    margin: 20px 0 0;
+    padding: 0;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+    .wrap {
+        height: calc(100vh - 46px); /* Adjust for mobile admin bar */
+    }
+    
+    .form-table th {
+        padding-bottom: 5px;
+    }
+    
+    .form-table td {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    
+    select {
+        max-width: 100%;
+    }
+}
+
+/* Remove the previous margin adjustments */
+.folded .sync-page-container {
+    margin-left: 0;
+}
+
+.wrap .card {
+    max-width: 100%;
+    margin-top: 20px;
+    padding: 20px;
+}
+
+.wrap .notice {
+    margin: 20px 0;
+}
+
+.wrap .notice ol {
+    margin: 10px 0 10px 20px;
+}
+
+.wrap code {
+    background: #f0f0f1;
+    padding: 3px 5px;
+    border-radius: 3px;
+}
+
+.wrap .widefat {
+    margin-top: 10px;
+    border-spacing: 0;
+    width: 100%;
+    clear: both;
+    border: 1px solid #ccd0d4;
+}
+
+.wrap .widefat th {
+    padding: 8px 10px;
+    line-height: 1.3;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    background: #f0f0f1;
+}
+
+.wrap .widefat td {
+    padding: 8px 10px;
+    vertical-align: middle;
+    line-height: 1.5;
+}
+
+.wrap .widefat tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+.wrap .form-table th {
+    width: 200px;
+    padding: 20px 10px 20px 0;
+}
+
+.wrap .form-table td {
+    padding: 15px 10px;
+}
+
+.wrap .description {
+    font-style: italic;
+    color: #666;
+    margin: 5px 0 0;
+}
+
+.place-id-help {
+    margin-top: 15px;
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border-left: 4px solid #007cba;
+    border-radius: 2px;
+}
+
+.place-id-help p {
+    margin: 0 0 8px 0;
+}
+
+.place-id-help ol {
+    margin: 0 0 0 20px;
+    padding: 0;
+}
+
+.place-id-help li {
+    margin: 5px 0;
+    line-height: 1.4;
+}
+
+.place-id-help a {
+    color: #007cba;
+    text-decoration: none;
+}
+
+.place-id-help a:hover {
+    color: #00a0d2;
+    text-decoration: underline;
+}
+
+.wrap ul {
+    list-style: disc;
+    margin-left: 20px;
+}
+
+.wrap ul li {
+    margin-bottom: 10px;
+}
+
+.wrap ul li code {
+    font-weight: 600;
+}
+
+.sync-page-container h1 {
+    align-self: flex-start;
+    width: 100%;
+} 
