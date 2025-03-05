@@ -66,7 +66,6 @@ class Reviews {
                 $new_columns['reviewer'] = __('Reviewer', 'beardog-reviews');
                 $new_columns['business'] = __('Business', 'beardog-reviews');
                 $new_columns['review_date'] = __('Review Date', 'beardog-reviews');
-                $new_columns['review_link'] = __('Review Link', 'beardog-reviews');
             } else if ($key !== 'date') { // Skip the default date column
                 $new_columns[$key] = $value;
             }
@@ -121,21 +120,6 @@ class Reviews {
                     }
                 }
                 break;
-
-            case 'review_link':
-                $place_id = get_post_meta($post_id, 'place_id', true);
-                $review_id = get_post_meta($post_id, 'review_id', true);
-                if ($place_id && $review_id) {
-                    $reviewer_url = sprintf(
-                        'https://search.google.com/local/reviews?placeid=%s#review=%s',
-                        $place_id,
-                        $review_id
-                    );
-                    echo '<a href="' . esc_url($reviewer_url) . '" target="_blank" class="button button-small">' . 
-                         '<span class="dashicons dashicons-external" style="vertical-align:middle;"></span> ' . 
-                         __('View Review', 'beardog-reviews') . '</a>';
-                }
-                break;
         }
     }
 
@@ -160,7 +144,8 @@ class Reviews {
             return false;
         }
 
-        $reviews = $this->fetch_reviews($place_id);
+        $reviews = $this->fetch_reviews($place_id);       
+
         if (!$reviews) {
             return false;
         }
@@ -190,71 +175,230 @@ class Reviews {
     }
 
     private function store_reviews($reviews, $term_id) {
+        $updated_reviews_count = 0;
+        $new_reviews_count = 0;
+    
         foreach ($reviews as $review) {
-            // Check if review already exists
-            $existing = get_posts([
-                'post_type' => 'agr_google_review',
-                'meta_key' => 'review_id',
-                'meta_value' => $review['id'],
-                'posts_per_page' => 1
-            ]);
-
-            if (!empty($existing)) {
+            // Unique identifier for the review
+            $review_unique_id = $this->generate_review_unique_key($review);
+    
+            // Check for existing review
+            $existing_review = $this->find_existing_review($review_unique_id);
+    
+            if ($existing_review) {
+                // Check if review needs update (older than 1 month)
+                $update_result = $this->maybe_update_existing_review($existing_review, $review, $term_id);
+                if ($update_result) {
+                    $updated_reviews_count++;
+                }
                 continue;
             }
-
-            // Format the published date from the review's published_date
-            $published_date = '';
-            if (!empty($review['published_date'])) {
-                // Handle both timestamp formats (seconds and milliseconds)
-                if (is_numeric($review['published_date'])) {
-                    $timestamp = strlen($review['published_date']) > 10 ? 
-                        intval($review['published_date']) / 1000 : 
-                        intval($review['published_date']);
-                } else {
-                    $timestamp = strtotime($review['published_date']);
-                }
-                if ($timestamp) {
-                    $published_date = date('Y-m-d H:i:s', $timestamp);
-                }
-            }
-            if (empty($published_date)) {
-                $published_date = current_time('mysql');
-            }
-
-            // Create new review post
-            $post_id = wp_insert_post([
-                'post_type' => 'agr_google_review',
-                'post_title' => wp_strip_all_tags($review['author_name']),
-                'post_content' => '', // Empty content, will store in meta
-                'post_status' => 'publish',
-                'post_date' => current_time('mysql'), // Use current time for post date
-                'post_date_gmt' => get_gmt_from_date(current_time('mysql'))
-            ]);
-
-            if ($post_id) {
-                // Set business taxonomy
-                wp_set_object_terms($post_id, $term_id, 'business');
-
-                // Store review metadata
-                $meta = [
-                    'review_id' => $review['id'],
-                    'author_name' => $review['author_name'],
-                    'profile_photo_url' => $review['profile_photo_url'],
-                    'rating' => $review['rating'],
-                    'original_text' => $review['text'], // Store original review text as meta
-                    'custom_text' => '', // Empty custom text field
-                    'published_date' => $published_date, // Store the actual review date
-                    'business_name' => $review['location_name'],
-                    'business_address' => $review['formatted_address'],
-                    'business_phone' => $review['formatted_phone_number'],
-                    'place_id' => $review['place_id']
-                ];
-
-                foreach ($meta as $key => $value) {
-                    update_post_meta($post_id, $key, $value);
-                }
+    
+            // If no existing review, create new
+            $new_post_id = $this->create_new_review_post($review, $term_id, $review_unique_id);
+            
+            if ($new_post_id) {
+                $new_reviews_count++;
             }
         }
+    
+        // Log or return update statistics
+        return [
+            'new_reviews' => $new_reviews_count,
+            'updated_reviews' => $updated_reviews_count
+        ];
     }
-} 
+    
+    /**
+     * Generate a unique key for the review
+     * 
+     * @param array $review Review data
+     * @return string Unique identifier
+     */
+    private function generate_review_unique_key($review) {
+        // Combine multiple unique identifiers to create a robust unique key
+        $unique_parts = [
+            $review['id'] ?? '', // Google review ID
+            $review['author_name'] ?? '',
+            $review['text'] ?? '',
+            $review['rating'] ?? ''
+        ];
+    
+        return md5(implode('|', $unique_parts));
+    }
+    
+    /**
+     * Find existing review by unique identifier
+     * 
+     * @param string $unique_id Unique review identifier
+     * @return WP_Post|false Existing review post or false
+     */
+    private function find_existing_review($unique_id) {
+        $existing_reviews = get_posts([
+            'post_type' => 'agr_google_review',
+            'meta_key' => '_review_unique_id',
+            'meta_value' => $unique_id,
+            'posts_per_page' => 1
+        ]);
+    
+        return !empty($existing_reviews) ? $existing_reviews[0] : false;
+    }
+    
+    /**
+     * Potentially update an existing review
+     * 
+     * @param WP_Post $existing_post Existing review post
+     * @param array $new_review New review data
+     * @param int $term_id Business term ID
+     * @return bool Whether the review was updated
+     */
+    private function maybe_update_existing_review($existing_post, $new_review, $term_id) {
+        // Check if review is older than 1 month
+        $last_updated = get_post_meta($existing_post->ID, 'last_update_timestamp', true);
+        $current_time = current_time('timestamp');
+        
+        // Update if no previous update or older than 1 month
+        $one_month_ago = strtotime('-1 month', $current_time);
+        if (!$last_updated || $last_updated < $one_month_ago) {
+            // Update review metadata
+            $updated_meta = [
+                'rating' => $new_review['rating'],
+                'original_text' => $new_review['text'],
+                'published_date' => $this->convert_timestamp_to_mysql($new_review['published_date']),
+                'profile_photo_url' => $new_review['profile_photo_url']
+            ];
+    
+            // Update post meta
+            foreach ($updated_meta as $key => $value) {
+                update_post_meta($existing_post->ID, $key, $value);
+            }
+    
+            // Update last update timestamp
+            update_post_meta($existing_post->ID, 'last_update_timestamp', $current_time);
+    
+            return true;
+        }
+    
+        return false;
+    }
+    
+    /**
+     * Create a new review post
+     * 
+     * @param array $review Review data
+     * @param int $term_id Business term ID
+     * @param string $unique_id Unique review identifier
+     * @return int|false Post ID or false on failure
+     */
+    private function create_new_review_post($review, $term_id, $unique_id) {
+        // Convert timestamp
+        $published_date = $this->convert_timestamp_to_mysql($review['published_date']);
+    
+        // Create new review post
+        $post_id = wp_insert_post([
+            'post_type' => 'agr_google_review',
+            'post_title' => wp_strip_all_tags($review['author_name']),
+            'post_content' => '', // Empty content, will store in meta
+            'post_status' => 'publish',
+            'post_date' => current_time('mysql'),
+            'post_date_gmt' => get_gmt_from_date(current_time('mysql'))
+        ]);
+    
+        if ($post_id) {
+            // Set business taxonomy
+            wp_set_object_terms($post_id, $term_id, 'business');
+    
+            // Store review metadata
+            $meta = [
+                '_review_unique_id' => $unique_id, // Unique identifier
+                'review_id' => $review['id'],
+                'author_name' => $review['author_name'],
+                'profile_photo_url' => $review['profile_photo_url'],
+                'rating' => $review['rating'],
+                'original_text' => $review['text'],
+                'custom_text' => '',
+                'published_date' => $published_date,
+                'business_name' => $review['location_name'],
+                'business_address' => $review['formatted_address'],
+                'business_phone' => $review['formatted_phone_number'],
+                'place_id' => $review['place_id'],
+                'last_update_timestamp' => current_time('timestamp')
+            ];
+    
+            foreach ($meta as $key => $value) {
+                update_post_meta($post_id, $key, $value);
+            }
+    
+            return $post_id;
+        }
+    
+        return false;
+    }
+    
+    /**
+     * Convert various timestamp formats to MySQL datetime format
+     * 
+     * @param mixed $timestamp Timestamp to convert
+     * @return string MySQL formatted date or current time if conversion fails
+     */
+    private function convert_timestamp_to_mysql($timestamp) {
+        // If no timestamp provided, use current time
+        if (empty($timestamp)) {
+            return current_time('mysql');
+        }
+    
+        // Ensure we're working with a numeric value
+        if (!is_numeric($timestamp)) {
+            // Try to convert string to timestamp
+            $converted = strtotime($timestamp);
+            return $converted ? date('Y-m-d H:i:s', $converted) : current_time('mysql');
+        }
+    
+        // Handle microsecond timestamps (very long numbers)
+        if (strlen((string)$timestamp) > 13) {
+            // Convert microseconds to seconds
+            $seconds = $timestamp / 1000000;
+        } 
+        // Handle millisecond timestamps (13 digits)
+        elseif (strlen((string)$timestamp) === 13) {
+            $seconds = $timestamp / 1000;
+        } 
+        // Handle standard Unix timestamps (10 digits)
+        else {
+            $seconds = $timestamp;
+        }
+    
+        // Convert to MySQL datetime format
+        return date('Y-m-d H:i:s', $seconds);
+    }
+    
+    /**
+     * Cleanup old or irrelevant reviews
+     * Optional method to remove very old reviews
+     * 
+     * @param int $months Number of months to keep reviews
+     */
+    public function cleanup_old_reviews($months = 12) {
+        $args = [
+            'post_type' => 'agr_google_review',
+            'posts_per_page' => -1,
+            'meta_query' => [
+                [
+                    'key' => 'published_date',
+                    'value' => date('Y-m-d H:i:s', strtotime("-{$months} months")),
+                    'compare' => '<',
+                    'type' => 'DATETIME'
+                ]
+            ]
+        ];
+    
+        $old_reviews = get_posts($args);
+    
+        foreach ($old_reviews as $review) {
+            wp_delete_post($review->ID, true);
+        }
+    
+        return count($old_reviews);
+    }
+  
+}

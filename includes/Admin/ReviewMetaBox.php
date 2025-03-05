@@ -29,17 +29,7 @@ class ReviewMetaBox {
         $review_id = get_post_meta($post->ID, 'review_id', true);
         $business_name = get_post_meta($post->ID, 'business_name', true);
         $business_address = get_post_meta($post->ID, 'business_address', true);
-        $business_phone = get_post_meta($post->ID, 'business_phone', true);
-
-        // Generate review URL
-        $reviewer_url = '';
-        if ($place_id && $review_id) {
-            $reviewer_url = sprintf(
-                'https://search.google.com/local/reviews?placeid=%s#review=%s',
-                $place_id,
-                $review_id
-            );
-        }
+        $business_phone = get_post_meta($post->ID, 'business_phone', true);       
 
         // Add nonce for security
         wp_nonce_field('agr_review_meta_box', 'agr_review_meta_box_nonce');
@@ -59,18 +49,7 @@ class ReviewMetaBox {
                     <tr>
                         <th><label><?php _e('Review Date', 'beardog-reviews'); ?></label></th>
                         <td><input type="text" value="<?php echo esc_attr($published_date ? date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($published_date)) : ''); ?>" readonly class="regular-text" /></td>
-                    </tr>
-                    <tr>
-                        <th><label><?php _e('Review Link', 'beardog-reviews'); ?></label></th>
-                        <td>
-                            <?php if ($reviewer_url): ?>
-                            <a href="<?php echo esc_url($reviewer_url); ?>" target="_blank" class="button">
-                                <span class="dashicons dashicons-external" style="vertical-align:middle;"></span>
-                                <?php _e('View Review', 'beardog-reviews'); ?>
-                            </a>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
+                    </tr>                    
                 </table>
             </div>
 
