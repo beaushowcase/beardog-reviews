@@ -67,6 +67,7 @@ class BeardogReviews {
         require_once AGR_PLUGIN_DIR . 'includes/Database.php';
         require_once AGR_PLUGIN_DIR . 'includes/Admin.php';
         require_once AGR_PLUGIN_DIR . 'includes/Reviews.php';
+        require_once AGR_PLUGIN_DIR . 'includes/DisplayReviews.php';
 
         // Initialize components
         $this->db = new Database();
