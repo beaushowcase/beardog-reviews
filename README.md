@@ -34,21 +34,36 @@ A WordPress plugin to display Google Reviews on your website, now with Repocean 
 
 ## Usage
 
-### Shortcode
-Use the shortcode to display reviews on any page or post:
+To get started with scrapping Google Reviews using the Beardog Reviews plugin, follow the steps below.
+
+### Free API Key
+
+Use your free API key:
+
 ```
-[awesome_google_reviews business="business-name"]
+beau62e081f846bbb5f452e426de67d7
 ```
 
-Optional parameters:
-- `count`: Number of reviews to display (default: 5)
-- `rating`: Minimum rating to display (1-5)
-- `sort`: Sort order ('recent' or 'rating')
+### Usage : Display Reviews
 
-Example:
+Ensure that the Beardog Reviews plugin is active before using this code.
+
+Below is an example of how to use the function to get 5-star reviews by term ID:
+
+```php
+if (function_exists('get_all_reviews_by_term')) {
+    //$google_reviews = get_all_reviews_by_term(); // For all reviews
+    $google_reviews = get_all_reviews_by_term(true); // For 5-star reviews only
+} else {
+    echo "Please activate the Beardog Reviews plugin.";
+}
 ```
-[awesome_google_reviews business="my-business" count="10" rating="4" sort="recent"]
-```
+
+Make sure to replace `13` with the actual term ID relevant to your business taxonomy.
+
+### Admin Panel
+
+Access the plugin settings through the WordPress admin panel under "Review Settings".
 
 ## Error Handling
 
