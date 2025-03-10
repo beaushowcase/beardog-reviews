@@ -1,4 +1,4 @@
-# Awesome Google Reviews (Repocean Integration)
+# Beardog Reviews (Repocean Integration)
 
 A WordPress plugin to display Google Reviews on your website, now with Repocean API integration.
 
@@ -36,14 +36,6 @@ A WordPress plugin to display Google Reviews on your website, now with Repocean 
 
 To get started with scrapping Google Reviews using the Beardog Reviews plugin, follow the steps below.
 
-### Free API Key
-
-Use your free API key:
-
-```
-beau62e081f846bbb5f452e426de67d7
-```
-
 ### Usage : Display Reviews
 
 Ensure that the Beardog Reviews plugin is active before using this code.
@@ -51,12 +43,9 @@ Ensure that the Beardog Reviews plugin is active before using this code.
 Below is an example of how to use the function to get 5-star reviews by term ID:
 
 ```php
-if (function_exists('get_all_reviews_by_term')) {
-    //$google_reviews = get_all_reviews_by_term(); // For all reviews
-    $google_reviews = get_all_reviews_by_term(true); // For 5-star reviews only
-} else {
-    echo "Please activate the Beardog Reviews plugin.";
-}
+use BeardogReviews\DisplayReviews;
+$processed_reviews = DisplayReviews::process_reviews_for_display(true); // true = only 5-star reviews
+echo "<pre>";print_r($processed_reviews);exit;
 ```
 
 Make sure to replace `13` with the actual term ID relevant to your business taxonomy.
