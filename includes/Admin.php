@@ -30,11 +30,15 @@ class Admin {
         
         // Add admin styles
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_styles']);
+        
+        // Add AJAX handlers
+        add_action('wp_ajax_agr_ajax_sync_reviews', [$this, 'ajax_sync_reviews']);
     }
 
     public function enqueue_admin_styles($hook) {
         if (strpos($hook, 'beardog-reviews') !== false) {
             wp_enqueue_style('agr-admin', AGR_PLUGIN_URL . 'assets/css/admin.css', [], AGR_VERSION);
+            wp_enqueue_script('jquery');
         }
     }
 
@@ -242,5 +246,37 @@ class Admin {
         );
         array_unshift($links, $settings_link);
         return $links;
+    }
+
+    /**
+     * AJAX handler for syncing reviews
+     */
+    public function ajax_sync_reviews() {
+        // Check nonce
+        check_ajax_referer('agr_sync_reviews');
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
+        // Get business ID
+        $term_id = isset($_POST['business_id']) ? intval($_POST['business_id']) : 0;
+        if (!$term_id) {
+            wp_send_json_error('Invalid business ID');
+            return;
+        }
+        
+        // Sync reviews
+        $result = $this->reviews->sync_reviews($term_id);
+        
+        if ($result) {
+            wp_send_json_success([
+                'message' => __('Reviews synced successfully!', 'beardog-reviews')
+            ]);
+        } else {
+            wp_send_json_error(__('Error syncing reviews. Please check the Place ID.', 'beardog-reviews'));
+        }
     }
 } 
