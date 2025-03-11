@@ -68,7 +68,23 @@ class DisplayReviews {
                     'type' => 'NUMERIC'
                 )
             );
+        } else {
+            $args['meta_query'] = array();
         }
+        
+        // Exclude disabled reviews
+        $args['meta_query'][] = array(
+            'relation' => 'OR',
+            array(
+                'key' => '_review_disabled',
+                'compare' => 'NOT EXISTS'
+            ),
+            array(
+                'key' => '_review_disabled',
+                'value' => '1',
+                'compare' => '!='
+            )
+        );
 
         $reviews_query = new \WP_Query($args);
         $total_posts = 0;
@@ -103,9 +119,8 @@ class DisplayReviews {
                     'time' => isset($post_meta['time'][0]) ? intval($post_meta['time'][0]) : 0,
                     'published_date' => isset($post_meta['published_date'][0]) ? $post_meta['published_date'][0] : '',
                     'translated' => isset($post_meta['translated'][0]) ? $post_meta['translated'][0] === 'true' : false,
-                    'custom_review_text' => isset($post_meta['custom_review_text'][0]) ? $post_meta['custom_review_text'][0] : '',
-                );
-                
+                    'custom_review_text' => !empty($post_meta['custom_text'][0]) ? $post_meta['custom_text'][0] : $post_meta['original_text'][0],
+                ); 
                 // Get business info
                 $business_terms = wp_get_post_terms($post_id, 'business');
                 if (!empty($business_terms) && !is_wp_error($business_terms)) {
@@ -113,7 +128,7 @@ class DisplayReviews {
                     $review['business_id'] = $business_terms[0]->term_id;
                 }
                 
-                $all_reviews[] = $review;
+                $all_reviews[] = $review;               
             }
             
             wp_reset_postdata();
@@ -136,12 +151,18 @@ class DisplayReviews {
      */
     public static function process_reviews_for_display($five_star_only = true) {
         // Get all reviews using the existing function
-        $google_reviews = self::get_all_reviews_by_term($five_star_only);
-        
+        $google_reviews = self::get_all_reviews_by_term($five_star_only);        
+
         $processed_reviews = array();
         
         if (!empty($google_reviews['all_reviews'])) {
             foreach ($google_reviews['all_reviews'] as $review) {
+                // Skip disabled reviews (additional safety check)
+                $is_disabled = get_post_meta($review['id'], '_review_disabled', true);
+                if ($is_disabled) {
+                    continue;
+                }
+                
                 // Get author information
                 $author_name = isset($review['author_name']) ? $review['author_name'] : '';
                 $author_initial = !empty($author_name) ? mb_substr($author_name, 0, 1) : '';
@@ -156,6 +177,8 @@ class DisplayReviews {
                         }
                     }
                 }
+
+
                 
                 // Get review date in human-readable format
                 $review_date = '';
@@ -230,42 +253,8 @@ class DisplayReviews {
                     } else {
                         $review_date = 'Unknown date';
                     }
-                }
-                
-                // Get review text - retrieve from database if not in array
-                $review_text = '';
-                
-                // First check for custom_review_text
-                if (!empty($review['custom_review_text'])) {
-                    $review_text = $review['custom_review_text'];
-                } 
-                // Then check for regular text
-                elseif (!empty($review['text'])) {
-                    $review_text = $review['text'];
-                } 
-                // If both are empty, fetch directly from post
-                else {
-                    // Fetch from post meta directly, in case it wasn't properly loaded
-                    $post_id = $review['id'];
-                    
-                    // Try to get custom review text first
-                    $custom_text = get_post_meta($post_id, 'custom_review_text', true);
-                    
-                    if (!empty($custom_text)) {
-                        $review_text = $custom_text;
-                    } else {
-                        // If no custom text, try various possible field names for original text
-                        $original_text = get_post_meta($post_id, 'text', true);
-                        if (empty($original_text)) {
-                            $original_text = get_post_meta($post_id, 'original_text', true);
-                        }
-                        if (empty($original_text)) {
-                            $original_text = get_post_meta($post_id, 'review_text', true);
-                        }
-                        
-                        $review_text = $original_text;
-                    }
-                }
+                }               
+               
                 
                 // Get business info
                 $business_terms = wp_get_post_terms($review['id'], 'business');
@@ -280,7 +269,7 @@ class DisplayReviews {
                     'author_initial_two' => $author_initial_two,
                     'author_full_name' => $author_name,
                     'review_date' => $review_date,
-                    'review_text' => $review_text,
+                    'review_text' => $review['custom_review_text'],
                     'business_term' => $business_name
                 );
             }

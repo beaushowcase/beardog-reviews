@@ -7,6 +7,12 @@ class Reviews {
 
     public function __construct() {
         $this->db = new Database();
+        
+        // Add AJAX handler for toggle review disable state
+        add_action('wp_ajax_toggle_review_disabled', array($this, 'ajax_toggle_review_disabled'));
+        
+        // Enqueue admin scripts
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
     }
 
     public function register_post_type() {
@@ -62,6 +68,7 @@ class Reviews {
         foreach ($columns as $key => $value) {
             if ($key === 'title') {
                 $new_columns[$key] = $value;
+                $new_columns['disabled'] = __('Disable', 'beardog-reviews');
                 $new_columns['rating'] = __('Rating', 'beardog-reviews');
                 $new_columns['reviewer'] = __('Reviewer', 'beardog-reviews');
                 $new_columns['business'] = __('Business', 'beardog-reviews');
@@ -119,6 +126,15 @@ class Reviews {
                         echo date_i18n('j F Y', $timestamp);
                     }
                 }
+                break;
+                
+            case 'disabled':
+                $is_disabled = get_post_meta($post_id, '_review_disabled', true);
+                $checked = $is_disabled ? 'checked' : '';
+                echo '<label class="agr-switch">';
+                echo '<input type="checkbox" class="agr-review-disable-toggle" data-review-id="' . esc_attr($post_id) . '" ' . $checked . '>';
+                echo '<span class="agr-slider round"></span>';
+                echo '</label>';
                 break;
         }
     }
@@ -400,5 +416,136 @@ class Reviews {
     
         return count($old_reviews);
     }
-  
+    
+    /**
+     * Enqueue admin scripts and styles
+     */
+    public function enqueue_admin_scripts($hook) {
+        global $post_type;
+        
+        // Only load on Google Reviews list page
+        if ($hook == 'edit.php' && $post_type == 'agr_google_review') {
+            // Enqueue inline CSS for the switch
+            wp_add_inline_style('wp-admin', '
+                .agr-switch {
+                    position: relative;
+                    display: inline-block;
+                    width: 40px;
+                    height: 22px;
+                }
+                
+                .agr-switch input {
+                    opacity: 0;
+                    width: 0;
+                    height: 0;
+                }
+                
+                .agr-slider {
+                    position: absolute;
+                    cursor: pointer;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: #ccc;
+                    transition: .4s;
+                }
+                
+                .agr-slider:before {
+                    position: absolute;
+                    content: "";
+                    height: 16px;
+                    width: 16px;
+                    left: 3px;
+                    bottom: 3px;
+                    background-color: white;
+                    transition: .4s;
+                }
+                
+                input:checked + .agr-slider {
+                    background-color: #f44336;
+                }
+                
+                input:focus + .agr-slider {
+                    box-shadow: 0 0 1px #f44336;
+                }
+                
+                input:checked + .agr-slider:before {
+                    transform: translateX(18px);
+                }
+                
+                .agr-slider.round {
+                    border-radius: 34px;
+                }
+                
+                .agr-slider.round:before {
+                    border-radius: 50%;
+                }
+            ');
+            
+            // Enqueue inline JavaScript for AJAX with fixes for double loader
+            wp_add_inline_script('jquery', '
+                jQuery(document).ready(function($) {
+                    $(".agr-review-disable-toggle").on("change", function() {
+                        var reviewId = $(this).data("review-id");
+                        var isDisabled = $(this).is(":checked") ? 1 : 0;
+                        var toggleSwitch = $(this);
+                        
+                        // Remove any existing spinners
+                        toggleSwitch.parent().find(".spinner").remove();
+                        
+                        // Show spinner
+                        toggleSwitch.parent().append("<span class=\"spinner is-active\" style=\"float:none;margin-left:10px;\"></span>");
+                        
+                        // Disable the toggle while processing
+                        toggleSwitch.prop("disabled", true);
+                        
+                        $.ajax({
+                            url: ajaxurl,
+                            type: "POST",
+                            data: {
+                                action: "toggle_review_disabled",
+                                review_id: reviewId,
+                                is_disabled: isDisabled,
+                                nonce: "' . wp_create_nonce('agr_toggle_review_disabled') . '"
+                            },
+                            success: function(response) {
+                                // Remove spinner
+                                toggleSwitch.parent().find(".spinner").remove();
+                                
+                                // Re-enable the toggle
+                                toggleSwitch.prop("disabled", false);
+                            },
+                            error: function() {
+                                // Remove spinner in case of error
+                                toggleSwitch.parent().find(".spinner").remove();
+                                
+                                // Re-enable the toggle
+                                toggleSwitch.prop("disabled", false);
+                            }
+                        });
+                    });
+                });
+            ');
+        }
+    }
+    
+    /**
+     * AJAX handler for toggling review disabled state
+     */
+    public function ajax_toggle_review_disabled() {
+        // Check nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'agr_toggle_review_disabled')) {
+            wp_send_json_error('Invalid security token');
+        }
+        
+        // Get parameters
+        $review_id = isset($_POST['review_id']) ? intval($_POST['review_id']) : 0;
+        $is_disabled = isset($_POST['is_disabled']) ? (bool)intval($_POST['is_disabled']) : false;
+        
+        // Update post meta
+        update_post_meta($review_id, '_review_disabled', $is_disabled);
+        
+        wp_send_json_success();
+    }
 }
