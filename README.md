@@ -1,4 +1,4 @@
-# Beardog Google Reviews Tool 🐕
+# Beardog Google Reviews Tool ⭐⭐⭐⭐⭐
 
 [![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-blue.svg)](https://wordpress.org/)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-red.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
