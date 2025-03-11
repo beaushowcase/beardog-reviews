@@ -3,10 +3,25 @@
 [![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-blue.svg)](https://wordpress.org/)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-red.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
+## 🚀 Usage
+
+### Display Reviews in Templates
+
 ```php
 use BeardogReviews\DisplayReviews;
+
+// Get all reviews (including filtered)
 $processed_reviews = DisplayReviews::process_reviews_for_display(true); // true = only 5-star reviews
-echo "<pre>";print_r($processed_reviews);exit;
+
+// Access review data
+foreach ($processed_reviews['reviews'] as $review) {
+    echo $review['author_full_name'];     // Reviewer name
+    echo $review['author_initial'];       // Single initial
+    echo $review['author_initial_two'];   // Two initials
+    echo $review['review_date'];          // Human-readable date
+    echo $review['review_text'];          // Review content
+    echo $review['business_term'];        // Business name
+}
 ```
 
 A powerful WordPress plugin that helps you display and manage Google Reviews on your website.
@@ -40,27 +55,6 @@ A powerful WordPress plugin that helps you display and manage Google Reviews on 
 2. Upload to `/wp-content/plugins/beardog-reviews/`
 3. Activate through WordPress admin panel
 4. Configure via 'Review Settings'
-
-## 🚀 Usage
-
-### Display Reviews in Templates
-
-```php
-use BeardogReviews\DisplayReviews;
-
-// Get all reviews (including filtered)
-$processed_reviews = DisplayReviews::process_reviews_for_display(true); // true = only 5-star reviews
-
-// Access review data
-foreach ($processed_reviews['reviews'] as $review) {
-    echo $review['author_full_name'];     // Reviewer name
-    echo $review['author_initial'];       // Single initial
-    echo $review['author_initial_two'];   // Two initials
-    echo $review['review_date'];          // Human-readable date
-    echo $review['review_text'];          // Review content
-    echo $review['business_term'];        // Business name
-}
-```
 
 ## 📝 Changelog
 
