@@ -13,6 +13,8 @@ class Reviews {
         
         // Enqueue admin scripts
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+        
+        
     }
 
     public function register_post_type() {
@@ -62,7 +64,25 @@ class Reviews {
         add_filter('manage_agr_google_review_posts_columns', [$this, 'add_review_columns']);
         add_action('manage_agr_google_review_posts_custom_column', [$this, 'manage_review_columns'], 10, 2);
         add_filter('manage_edit-agr_google_review_sortable_columns', [$this, 'sortable_review_columns']);
+        
+        
+        add_filter('rest_prepare_agr_google_review', [$this, 'expose_all_meta_fields_in_rest'], 10, 3);
     }
+    
+    
+    public function expose_all_meta_fields_in_rest($response, $post, $request)
+    {
+        if ($post->post_type === 'agr_google_review') {
+            $meta = get_post_meta($post->ID);
+            // Sanitize meta data
+            $sanitized_meta = array_map(function ($meta_value) {
+                return is_array($meta_value) ? array_map('sanitize_text_field', $meta_value) : sanitize_text_field($meta_value);
+            }, $meta);
+            $response->data['meta'] = $sanitized_meta;
+        }
+        return $response;
+    }
+
 
     public function add_review_columns($columns) {
         $new_columns = [];
