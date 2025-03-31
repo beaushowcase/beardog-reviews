@@ -33,7 +33,7 @@ class Reviews {
             'show_ui' => true,
             'show_in_menu' => true,
             'menu_icon' => 'dashicons-google',
-            'supports' => ['title'],
+            'supports' => array(''),
             'has_archive' => false,
             'show_in_rest' => true,
             'rewrite' => ['slug' => 'google-reviews']
