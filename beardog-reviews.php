@@ -4,7 +4,7 @@
  * Plugin Name: Beardog Reviews
  * Plugin URI: https://beardog.digital/
  * Description: A modern, efficient plugin to display Google Reviews using Place IDs
- * Version: 2.0.0
+ * Version: 2.1
  * Requires PHP: 7.4
  * Author: #beaubhavik
  * Author URI: https://beardog.digital/

@@ -35,6 +35,7 @@ class Reviews {
             'menu_icon' => 'dashicons-google',
             'supports' => ['title'],
             'has_archive' => false,
+            'show_in_rest' => true,
             'rewrite' => ['slug' => 'google-reviews']
         ]);
 
