@@ -92,6 +92,7 @@ class Reviews {
                 $new_columns['disabled'] = __('Disable', 'beardog-reviews');
                 $new_columns['rating'] = __('Rating', 'beardog-reviews');
                 $new_columns['reviewer'] = __('Reviewer', 'beardog-reviews');
+                $new_columns['description'] = __('Description', 'beardog-reviews'); // Added Description column
                 $new_columns['business'] = __('Business', 'beardog-reviews');
                 $new_columns['review_date'] = __('Review Date', 'beardog-reviews');
             } else if ($key !== 'date') { // Skip the default date column
@@ -126,6 +127,14 @@ class Reviews {
                          '</span>';
                 }
                 echo esc_html($author_name);
+                break;
+
+            case 'description':
+                $review_text = get_post_meta($post_id, 'custom_text', true);
+                if(empty($review_text)){
+                    $review_text = get_post_meta($post_id, 'original_text', true);
+                }
+                echo esc_html(wp_trim_words($review_text, 10, '...')); // Display first 10 words
                 break;
 
             case 'business':
