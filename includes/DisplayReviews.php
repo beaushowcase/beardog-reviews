@@ -168,16 +168,27 @@ class DisplayReviews {
                 $author_initial = !empty($author_name) ? mb_substr($author_name, 0, 1) : '';
                 
                 // Get initials of each word in author name (e.g., "John Smith" -> "JS")
+                // $author_initial_two = '';
+                // if (!empty($author_name)) {
+                //     $name_parts = explode(' ', $author_name);
+                //     foreach ($name_parts as $part) {
+                //         if (!empty($part)) {
+                //             $author_initial_two .= mb_substr($part, 0, 1);
+                //         }
+                //     }
+                // }
+                
                 $author_initial_two = '';
                 if (!empty($author_name)) {
                     $name_parts = explode(' ', $author_name);
+                    $count = 0;
                     foreach ($name_parts as $part) {
-                        if (!empty($part)) {
+                        if (!empty($part) && $count < 2) {
                             $author_initial_two .= mb_substr($part, 0, 1);
+                            $count++;
                         }
                     }
                 }
-
 
                 
                 // Get review date in human-readable format
